@@ -17,7 +17,7 @@ const apiKey = process.env.JKT48_API_KEY || "NK-SUJ1";
 const NAYLA_ID = "65ce68ed1dd7aa2c8c0ca780";
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://admin.nayrakuen.com", "http://nayrakuen.com"],
+  origin: ["https://backend-seven-nu-19.vercel.app", "http://admin.nayrakuen.com", "http://nayrakuen.com"],
   credentials: true
 }));
 app.use(express.json());
@@ -155,6 +155,4 @@ app.get("/api/nayla/idnlive", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server berjalan di http://localhost:${PORT}`);
-});
+module.exports = app;
