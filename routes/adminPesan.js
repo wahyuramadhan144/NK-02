@@ -1,15 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const path = require("path");
 const adminPesanController = require("../controllers/adminPesanController");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(process.cwd(), "uploads")),
-  filename: (req, file, cb) =>
-    cb(null, 'review_' + Date.now() + path.extname(file.originalname))
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post('/import-review-excel', upload.single('file'), adminPesanController.importReviewFromExcel);
