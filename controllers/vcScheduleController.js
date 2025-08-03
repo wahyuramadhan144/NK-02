@@ -11,19 +11,19 @@ exports.getAllVC = async (req, res) => {
 };
 
 exports.addVC = async (req, res) => {
-  const { name, date, link, status } = req.body;
+  const { sesi, nama, preparation, masuk, status } = req.body;
 
-  if (!name || !date || !link || !status) {
+  if (!sesi || !nama || !preparation || !masuk || !status) {
     return res.status(400).json({ error: "Semua field harus diisi" });
   }
 
   try {
     const insertQuery = `
-      INSERT INTO video_call_schedule (name, date, link, status)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO video_call_schedule (sesi, nama, preparation, masuk, status)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const result = await pool.query(insertQuery, [name, date, link, status]);
+    const result = await pool.query(insertQuery, [sesi, nama, preparation, masuk, status]);
     res.status(201).json({ message: "Berhasil menambahkan jadwal", data: result.rows[0] });
   } catch (error) {
     console.error("Gagal tambah jadwal:", error);
