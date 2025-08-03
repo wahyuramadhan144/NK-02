@@ -1,85 +1,49 @@
-const db = require("../config/db");
+const pool = require("../config/db");
 
-exports.getSchedule = async (req, res) => {
+exports.getAllVC = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM video_call_schedule ORDER BY sesi ASC"
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error("Gagal ambil data jadwal VC:", err.message);
-    res.status(500).json({ error: "Gagal ambil data dari database" });
+    const result = await pool.query("SELECT * FROM videocall ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Gagal ambil data:", error);
+    res.status(500).json({ error: "Gagal mengambil data" });
   }
 };
 
-exports.createSchedule = async (req, res) => {
-  const { sesi, nama, preparation, masuk, status } = req.body;
+exports.addVC = async (req, res) => {
+  const { name, date, link, status } = req.body;
 
-  if (!sesi || !nama || !preparation || !masuk || !status) {
-    return res.status(400).json({ error: "Semua field wajib diisi" });
+  if (!name || !date || !link || !status) {
+    return res.status(400).json({ error: "Semua field harus diisi" });
   }
 
   try {
-    const sql = `
-      INSERT INTO video_call_schedule 
-      (sesi, nama, preparation, masuk, status) 
-      VALUES (?, ?, ?, ?, ?)
+    const insertQuery = `
+      INSERT INTO videocall (name, date, link, status)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
     `;
-    const values = [sesi, nama, preparation, masuk, status];
-    await db.query(sql, values);
-
-    res.status(201).json({ message: "Jadwal berhasil ditambahkan" });
-  } catch (err) {
-    console.error("Gagal tambah jadwal:", err.message);
-    res.status(500).json({ error: "Gagal tambah jadwal ke database" });
+    const result = await pool.query(insertQuery, [name, date, link, status]);
+    res.status(201).json({ message: "Berhasil menambahkan jadwal", data: result.rows[0] });
+  } catch (error) {
+    console.error("Gagal tambah jadwal:", error);
+    res.status(500).json({ error: "Gagal menambahkan jadwal" });
   }
 };
 
-exports.deleteSchedule = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) return res.status(400).json({ error: "ID tidak ditemukan" });
+exports.deleteVC = async (req, res) => {
+  const id = req.params.id;
 
   try {
-    const [result] = await db.query(
-      "DELETE FROM video_call_schedule WHERE id = ?",
-      [id]
-    );
+    const result = await pool.query("DELETE FROM videocall WHERE id = $1 RETURNING *", [id]);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Jadwal tidak ditemukan" });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Data tidak ditemukan" });
     }
 
-    res.json({ message: "Jadwal berhasil dihapus" });
-  } catch (err) {
-    console.error("Gagal hapus jadwal:", err.message);
-    res.status(500).json({ error: "Gagal hapus jadwal dari database" });
-  }
-};
-
-exports.updateSchedule = async (req, res) => {
-  const { id } = req.params;
-  const { sesi, nama, preparation, masuk, status } = req.body;
-
-  if (!id || !sesi || !nama || !preparation || !masuk || !status) {
-    return res.status(400).json({ error: "Semua field wajib diisi" });
-  }
-
-  try {
-    const [result] = await db.query(
-      `UPDATE video_call_schedule 
-       SET sesi = ?, nama = ?, preparation = ?, masuk = ?, status = ?
-       WHERE id = ?`,
-      [sesi, nama, preparation, masuk, status, id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Jadwal tidak ditemukan" });
-    }
-
-    res.json({ message: "Jadwal berhasil diperbarui" });
-  } catch (err) {
-    console.error("Gagal update jadwal:", err.message);
-    res.status(500).json({ error: "Gagal update jadwal di database" });
+    res.json({ message: "Berhasil menghapus jadwal", data: result.rows[0] });
+  } catch (error) {
+    console.error("Gagal hapus jadwal:", error);
+    res.status(500).json({ error: "Gagal menghapus jadwal" });
   }
 };
