@@ -10,6 +10,6 @@ const {
 router.get('/', getAllVC);
 router.post('/', addVC);
 router.delete('/:id', deleteVC);
-router.put("/videocall/:id", updateVC);
+router.put("/:id", updateVC);
 
 module.exports = router;
