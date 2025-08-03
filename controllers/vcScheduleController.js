@@ -2,7 +2,7 @@ const pool = require("../config/db");
 
 exports.getAllVC = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM videocall ORDER BY id DESC");
+    const result = await pool.query("SELECT * FROM video_call_schedule ORDER BY id DESC");
     res.json(result.rows);
   } catch (error) {
     console.error("Gagal ambil data:", error);
@@ -19,7 +19,7 @@ exports.addVC = async (req, res) => {
 
   try {
     const insertQuery = `
-      INSERT INTO videocall (name, date, link, status)
+      INSERT INTO video_call_schedule (name, date, link, status)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
@@ -35,7 +35,7 @@ exports.deleteVC = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const result = await pool.query("DELETE FROM videocall WHERE id = $1 RETURNING *", [id]);
+    const result = await pool.query("DELETE FROM video_call_schedule WHERE id = $1 RETURNING *", [id]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Data tidak ditemukan" });
