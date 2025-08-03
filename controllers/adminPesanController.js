@@ -6,54 +6,59 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: "File Excel tidak ditemukan" });
-    }
+    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan" });
 
-    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(sheet);
+    const workbook = xlsx.readFile(file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const sheetData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    let inserted = 0;
-    let skipped = 0;
+    console.log("Data dari Excel:");
+    console.table(sheetData);
 
-    for (const row of data) {
-      const nama = row["NAMA"]?.toString().trim();
-      let review = row["FEEDBACK/REVIEW"]?.toString().trim();
-      const rating = row["RATING"] || null;
+    let insertedCount = 0;
+    let skippedRows = [];
 
-      if (!nama || !review) {
-        skipped++;
+    for (let i = 0; i < sheetData.length; i++) {
+      const row = sheetData[i];
+      const nama = row["Nama"]?.toString().trim();
+      const review = row["Review"]?.toString().trim();
+      const rating = row["Rating"]?.toString().trim();
+
+      if (!nama || !review || !rating) {
+        skippedRows.push({ index: i + 2, reason: "Data kosong", row });
         continue;
       }
 
-      const words = review.split(/\s+/);
-      if (words.length > 50) {
-        review = words.slice(0, 50).join(" ");
+      const ratingNum = parseInt(rating);
+      if (isNaN(ratingNum)) {
+        skippedRows.push({ index: i + 2, reason: "Rating bukan angka", row });
+        continue;
       }
 
-      const [existing] = await db.query(
-        "SELECT * FROM vc_reviews WHERE nama = ? AND review = ?",
-        [nama, review]
-      );
-
-      if (existing.length === 0) {
-        await db.query(
-          "INSERT INTO vc_reviews (nama, review, rating) VALUES (?, ?, ?)",
-          [nama, review, rating]
+      try {
+        await db.promise().query(
+          "INSERT INTO fan_messages (nama, review, rating) VALUES (?, ?, ?)",
+          [nama, review, ratingNum]
         );
-        inserted++;
-      } else {
-        skipped++;
+        insertedCount++;
+      } catch (err) {
+        skippedRows.push({ index: i + 2, reason: "Gagal insert DB", error: err.message, row });
       }
     }
 
+    fs.unlinkSync(file.path);
+
     res.json({
-      message: `${inserted} review berhasil diimport. ${skipped} review dilewati.`,
+      success: true,
+      inserted: insertedCount,
+      skipped: skippedRows.length,
+      details: skippedRows,
     });
+
   } catch (error) {
-    console.error("Gagal proses file Excel:", error);
-    res.status(500).json({ error: "Gagal memproses file Excel" });
+    console.error("ERROR:", error);
+    res.status(500).json({ error: "Terjadi kesalahan saat mengimpor file Excel." });
   }
 };
 
