@@ -4,6 +4,7 @@ const {
   getAllVC,
   addVC,
   deleteVC,
+  updateVC,
 } = require('../controllers/vcScheduleController');
 
 router.get('/', getAllVC);
