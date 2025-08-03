@@ -18,9 +18,9 @@ exports.importReviewFromExcel = async (req, res) => {
     let skipped = 0;
 
     for (const row of data) {
-      const nama = row["Nama"]?.toString().trim();
-      let review = row["Review"]?.toString().trim();
-      const rating = row["Rating"] || null;
+      const nama = row["NAMA"]?.toString().trim();
+      let review = row["FEEDBACK/REVIEW"]?.toString().trim();
+      const rating = row["RATING"] || null;
 
       if (!nama || !review) {
         skipped++;
