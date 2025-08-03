@@ -6,59 +6,37 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan" });
 
-    const workbook = xlsx.readFile(file.path);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const sheetData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
-
-    console.log("Data dari Excel:");
-    console.table(sheetData);
-
-    let insertedCount = 0;
-    let skippedRows = [];
-
-    for (let i = 0; i < sheetData.length; i++) {
-      const row = sheetData[i];
-      const nama = row["Nama"]?.toString().trim();
-      const review = row["Review"]?.toString().trim();
-      const rating = row["Rating"]?.toString().trim();
-
-      if (!nama || !review || !rating) {
-        skippedRows.push({ index: i + 2, reason: "Data kosong", row });
-        continue;
-      }
-
-      const ratingNum = parseInt(rating);
-      if (isNaN(ratingNum)) {
-        skippedRows.push({ index: i + 2, reason: "Rating bukan angka", row });
-        continue;
-      }
-
-      try {
-        await db.promise().query(
-          "INSERT INTO fan_messages (nama, review, rating) VALUES (?, ?, ?)",
-          [nama, review, ratingNum]
-        );
-        insertedCount++;
-      } catch (err) {
-        skippedRows.push({ index: i + 2, reason: "Gagal insert DB", error: err.message, row });
-      }
+    if (!file) {
+      return res.status(400).json({ error: "File Excel tidak ditemukan." });
     }
 
-    fs.unlinkSync(file.path);
+    const workbook = xlsx.read(file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(sheet);
 
-    res.json({
-      success: true,
-      inserted: insertedCount,
-      skipped: skippedRows.length,
-      details: skippedRows,
-    });
+    console.log("Parsed data:", data);
 
+    if (data.length === 0) {
+      return res.status(400).json({ error: "Tidak ada data di file Excel." });
+    }
+
+    for (const row of data) {
+      const { nama, review, rating } = row;
+
+      if (!nama || !review || !rating) continue;
+
+      await db.query(
+        "INSERT INTO review_vc (nama, review, rating) VALUES (?, ?, ?)",
+        [nama, review, rating]
+      );
+    }
+
+    res.status(200).json({ message: `Import berhasil, total ${data.length} baris dibaca.` });
   } catch (error) {
-    console.error("ERROR:", error);
-    res.status(500).json({ error: "Terjadi kesalahan saat mengimpor file Excel." });
+    console.error("Import Excel error:", error);
+    res.status(500).json({ error: "Gagal mengimpor data Excel." });
   }
 };
 
