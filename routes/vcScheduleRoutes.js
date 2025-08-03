@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getSchedule,
-  createSchedule,
-  deleteSchedule,
-  updateSchedule,
+  getAllVC,
+  addVC,
+  deleteVC,
 } = require('../controllers/vcScheduleController');
 
-router.get('/', getSchedule);
-router.post('/', createSchedule);
-router.delete('/:id', deleteSchedule);
-router.put('/:id', updateSchedule);
+router.get('/', getAllVC);
+router.post('/', addVC);
+router.delete('/:id', deleteVC);
 
 module.exports = router;
