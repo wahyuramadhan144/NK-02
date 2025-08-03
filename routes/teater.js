@@ -4,7 +4,11 @@ const db = require('../config/db');
 
 router.get('/', async (req, res) => {
   try {
-    const [results] = await db.query('SELECT * FROM teater_nayla ORDER BY tanggal DESC, jam DESC');
+    const [results] = await db.query(`
+      SELECT id, tanggal, jam, setlist, catatan, created_at 
+      FROM teater_nayla 
+      ORDER BY tanggal DESC, jam DESC
+    `);
     res.json(results);
   } catch (err) {
     console.error('Gagal ambil jadwal:', err);
