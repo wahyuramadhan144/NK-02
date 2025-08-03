@@ -10,7 +10,7 @@ exports.importReviewFromExcel = async (req, res) => {
       return res.status(400).json({ error: "File Excel tidak ditemukan" });
     }
 
-    const workbook = xlsx.readFile(file.path);
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = xlsx.utils.sheet_to_json(sheet);
 
@@ -47,8 +47,6 @@ exports.importReviewFromExcel = async (req, res) => {
         skipped++;
       }
     }
-
-    fs.unlinkSync(file.path);
 
     res.json({
       message: `${inserted} review berhasil diimport. ${skipped} review dilewati.`,
