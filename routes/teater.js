@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
 
   try {
     const [result] = await db.query(
-      'INSERT INTO teater_nayla (tanggal, jam, setlist, catatan) VALUES (?, ?, ?, ?)',
+      'INSERT INTO teater_nayla (tanggal, jam, setlist, catatan) VALUES ($1, $2, $3, $4)',
       [tanggal, jam, setlist, catatan]
     );
 
