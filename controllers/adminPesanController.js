@@ -6,7 +6,9 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan" });
+    if (!file) {
+      return res.status(400).json({ error: "File Excel tidak ditemukan" });
+    }
 
     const workbook = xlsx.readFile(file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -16,49 +18,29 @@ exports.importReviewFromExcel = async (req, res) => {
     let skipped = 0;
 
     for (const row of data) {
-      const nama = row["NAMA"] || "";
-      const tanggalRaw = row["TANGGAL VIDEO CALL"];
-      let review = row["FEEDBACK / REVIEW"] || "";
-      const rating = row["RATING"] || "";
+      const nama = row["Nama"]?.toString().trim();
+      let review = row["Review"]?.toString().trim();
+      const rating = row["Rating"] || null;
 
-      if (!nama || !review || !tanggalRaw) {
+      if (!nama || !review) {
         skipped++;
         continue;
       }
 
-      const words = review.trim().split(/\s+/);
+      const words = review.split(/\s+/);
       if (words.length > 50) {
         review = words.slice(0, 50).join(" ");
       }
 
-      let bulan = null;
-      if (typeof tanggalRaw === "number") {
-        const d = new Date(Math.round((tanggalRaw - 25569) * 86400 * 1000));
-        bulan = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      } else if (typeof tanggalRaw === "string") {
-        const parsed = dayjs(tanggalRaw, ["DD/MM/YYYY", "D/M/YYYY", "DD-MM-YYYY", "YYYY-MM-DD"], true);
-        if (parsed.isValid()) {
-          bulan = parsed.format("YYYY-MM");
-        }
-      } else if (tanggalRaw instanceof Date) {
-        bulan = `${tanggalRaw.getFullYear()}-${String(tanggalRaw.getMonth() + 1).padStart(2, "0")}`;
-      }
-
-      if (!bulan) {
-        console.warn("Lewatkan karena format tanggal tidak valid:", tanggalRaw);
-        skipped++;
-        continue;
-      }
-
       const [existing] = await db.query(
-        "SELECT * FROM vc_reviews WHERE nama = ? AND review = ? AND bulan = ?",
-        [nama, review, bulan]
+        "SELECT * FROM vc_reviews WHERE nama = ? AND review = ?",
+        [nama, review]
       );
 
       if (existing.length === 0) {
         await db.query(
-          "INSERT INTO vc_reviews (bulan, nama, review, rating) VALUES (?, ?, ?, ?)",
-          [bulan, nama, review, rating]
+          "INSERT INTO vc_reviews (nama, review, rating) VALUES (?, ?, ?)",
+          [nama, review, rating]
         );
         inserted++;
       } else {
