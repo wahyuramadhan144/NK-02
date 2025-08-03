@@ -47,3 +47,31 @@ exports.deleteVC = async (req, res) => {
     res.status(500).json({ error: "Gagal menghapus jadwal" });
   }
 };
+
+exports.updateVC = async (req, res) => {
+  const id = req.params.id;
+  const { sesi, nama, preparation, masuk, status } = req.body;
+
+  if (!sesi || !nama || !preparation || !masuk || !status) {
+    return res.status(400).json({ error: "Semua field harus diisi" });
+  }
+
+  try {
+    const updateQuery = `
+      UPDATE video_call_schedule
+      SET sesi = $1, nama = $2, preparation = $3, masuk = $4, status = $5
+      WHERE id = $6
+      RETURNING *
+    `;
+    const result = await pool.query(updateQuery, [sesi, nama, preparation, masuk, status, id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Data tidak ditemukan" });
+    }
+
+    res.json({ message: "Berhasil memperbarui jadwal", data: result.rows[0] });
+  } catch (error) {
+    console.error("Gagal update jadwal:", error);
+    res.status(500).json({ error: "Gagal memperbarui jadwal" });
+  }
+};
