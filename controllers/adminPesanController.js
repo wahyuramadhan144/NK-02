@@ -1,7 +1,5 @@
 const db = require("../config/db");
 const xlsx = require("xlsx");
-const path = require("path");
-const fs = require("fs");
 
 exports.getMessages = async (req, res) => {
   try {
@@ -60,13 +58,13 @@ exports.getReviews = async (req, res) => {
 
 exports.createReview = async (req, res) => {
   try {
-    const { nama, member, review } = req.body;
-    if (!nama || !member || !review)
-      return res.status(400).json({ error: "Semua field wajib diisi" });
+    const { nama, tanggal, review, rating } = req.body;
+    if (!nama || !tanggal || !review)
+      return res.status(400).json({ error: "Field nama, tanggal, dan review wajib diisi" });
 
     await db.query(
-      "INSERT INTO review_vc (nama, member, review) VALUES (?, ?, ?)",
-      [nama, member, review]
+      "INSERT INTO review_vc (nama, tanggal, review, rating) VALUES (?, ?, ?, ?)",
+      [nama, tanggal, review, rating || null]
     );
     res.status(201).json({ message: "Review berhasil ditambahkan" });
   } catch (err) {
@@ -96,11 +94,11 @@ exports.importReviewFromExcel = async (req, res) => {
     const data = xlsx.utils.sheet_to_json(sheet);
 
     for (const row of data) {
-      const { nama, member, review } = row;
-      if (nama && member && review) {
+      const { nama, tanggal, review, rating } = row;
+      if (nama && tanggal && review) {
         await db.query(
-          "INSERT INTO review_vc (nama, member, review) VALUES (?, ?, ?)",
-          [nama, member, review]
+          "INSERT INTO review_vc (nama, tanggal, review, rating) VALUES (?, ?, ?, ?)",
+          [nama, tanggal, review, rating || null]
         );
       }
     }
