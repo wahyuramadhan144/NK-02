@@ -31,33 +31,34 @@ exports.importReviewFromExcel = async (req, res) => {
         review = words.slice(0, 50).join(" ");
       }
 
-      let tanggal;
+      let bulan = null;
       if (typeof tanggalRaw === "number") {
-        tanggal = new Date(Math.round((tanggalRaw - 25569) * 86400 * 1000));
+        const d = new Date(Math.round((tanggalRaw - 25569) * 86400 * 1000));
+        bulan = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       } else if (typeof tanggalRaw === "string") {
         const parsed = dayjs(tanggalRaw, ["DD/MM/YYYY", "D/M/YYYY", "DD-MM-YYYY", "YYYY-MM-DD"], true);
         if (parsed.isValid()) {
-          tanggal = parsed.toDate();
+          bulan = parsed.format("YYYY-MM");
         }
       } else if (tanggalRaw instanceof Date) {
-        tanggal = tanggalRaw;
+        bulan = `${tanggalRaw.getFullYear()}-${String(tanggalRaw.getMonth() + 1).padStart(2, "0")}`;
       }
 
-      if (!tanggal || isNaN(tanggal.getTime())) {
+      if (!bulan) {
         console.warn("Lewatkan karena format tanggal tidak valid:", tanggalRaw);
         skipped++;
         continue;
       }
 
       const [existing] = await db.query(
-        "SELECT * FROM vc_reviews WHERE nama = ? AND review = ? AND tanggal = ?",
-        [nama, review, tanggal]
+        "SELECT * FROM vc_reviews WHERE nama = ? AND review = ? AND bulan = ?",
+        [nama, review, bulan]
       );
 
       if (existing.length === 0) {
         await db.query(
-          "INSERT INTO vc_reviews (nama, review, rating, tanggal) VALUES (?, ?, ?, ?)",
-          [nama, review, rating, tanggal]
+          "INSERT INTO vc_reviews (bulan, nama, review, rating) VALUES (?, ?, ?, ?)",
+          [bulan, nama, review, rating]
         );
         inserted++;
       } else {
@@ -71,18 +72,21 @@ exports.importReviewFromExcel = async (req, res) => {
       message: `${inserted} review berhasil diimport. ${skipped} review dilewati.`,
     });
   } catch (error) {
-    console.error("❌ Gagal proses file Excel:", error);
+    console.error("Gagal proses file Excel:", error);
     res.status(500).json({ error: "Gagal memproses file Excel" });
   }
 };
 
 exports.getReviews = async (req, res) => {
   try {
-    const [result] = await db.query("SELECT * FROM vc_reviews ORDER BY created_at DESC");
-    res.json(result);
+    const query = "SELECT * FROM vc_reviews ORDER BY created_at DESC";
+    const result = await db.query(query);
+    const reviews = result.rows;
+
+    res.status(200).json(reviews);
   } catch (err) {
-    console.error("❌ Gagal ambil review:", err);
-    res.status(500).json({ error: "Gagal ambil review dari database" });
+    console.error("Gagal ambil review:", err);
+    res.status(500).json({ error: "Gagal ambil review" });
   }
 };
 
