@@ -4,12 +4,12 @@ const db = require('../config/db');
 
 router.get('/', async (req, res) => {
   try {
-    const [results] = await db.query(`
+    const result = await db.query(`
       SELECT id, tanggal, jam, setlist, catatan, created_at 
       FROM teater_nayla 
       ORDER BY tanggal DESC, jam DESC
     `);
-    res.json(results);
+    res.json(result.rows);
   } catch (err) {
     console.error('Gagal ambil jadwal:', err);
     res.status(500).json({ error: 'Gagal mengambil data jadwal teater' });
@@ -24,12 +24,12 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const [result] = await db.query(
-      'INSERT INTO teater_nayla (tanggal, jam, setlist, catatan) VALUES ($1, $2, $3, $4)',
+    const result = await db.query(
+      'INSERT INTO teater_nayla (tanggal, jam, setlist, catatan) VALUES ($1, $2, $3, $4) RETURNING id',
       [tanggal, jam, setlist, catatan]
     );
 
-    res.json({ message: 'Jadwal teater berhasil ditambahkan', id: result.insertId });
+    res.json({ message: 'Jadwal teater berhasil ditambahkan', id: result.rows[0].id });
   } catch (err) {
     console.error('Gagal tambah jadwal:', err);
     res.status(500).json({ error: 'Gagal menambahkan jadwal teater' });
@@ -40,9 +40,9 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [result] = await db.query('DELETE FROM teater_nayla WHERE id = ?', [id]);
+    const result = await db.query('DELETE FROM teater_nayla WHERE id = $1', [id]);
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
     }
 
