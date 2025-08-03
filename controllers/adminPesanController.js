@@ -6,27 +6,47 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan." });
+    if (!file) {
+      return res.status(400).json({ error: "File Excel tidak ditemukan" });
+    }
 
     const workbook = xlsx.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(sheet);
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-    const insertData = data.map((row) => ({
-      nama: row.NAMA || null,
-      tanggal_vc: row["TANGGAL VIDEO CALL"] || null,
-      review: row["FEEDBACK / REVIEW"] || null,
-      rating: row.RATING || null,
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ error: "Isi file kosong atau tidak sesuai format" });
+    }
+
+    const formatted = rows.map((row) => ({
+      nama: row["NAMA"] || "",
+      tanggal_vc: row["TANGGAL VIDEO CALL"] || "",
+      review: row["FEEDBACK / REVIEW"] || "",
+      rating: row["RATING"] || "",
     }));
 
-    const { error } = await supabase.from("review_vc").insert(insertData);
-    if (error) throw error;
+    const filtered = formatted.filter((item) =>
+      item.nama && item.tanggal_vc && item.review && item.rating
+    );
 
-    res.status(200).json({ message: "Data berhasil diimpor." });
+    if (filtered.length === 0) {
+      return res.status(400).json({ error: "Tidak ada data valid untuk diinput." });
+    }
+
+    const { data, error } = await supabase
+      .from("review_vc")
+      .insert(filtered);
+
+    if (error) {
+      console.error("Supabase error:", error.message);
+      return res.status(500).json({ error: "Gagal insert ke database", detail: error.message });
+    }
+
+    res.status(200).json({ message: "Import berhasil", inserted: data.length });
   } catch (err) {
-    console.error("Import error:", err);
-    res.status(500).json({ error: "Gagal impor data dari Excel." });
+    console.error("Import error:", err.message);
+    res.status(500).json({ error: "Terjadi kesalahan saat import", detail: err.message });
   }
 };
 
