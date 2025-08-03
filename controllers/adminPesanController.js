@@ -10,30 +10,23 @@ exports.importReviewFromExcel = async (req, res) => {
 
     const workbook = xlsx.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    const sheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(sheet);
 
-    const reviews = data.map((row) => ({
-      nama: row["NAMA"],
-      tanggal: row["TANGGAL VIDEO CALL"],
-      review: row["FEEDBACK / REVIEW"],
-      rating: row["RATING"]
+    const insertData = data.map((row) => ({
+      nama: row.NAMA || null,
+      tanggal_vc: row["TANGGAL VIDEO CALL"] || null,
+      review: row["FEEDBACK / REVIEW"] || null,
+      rating: row.RATING || null,
     }));
 
-    for (const review of reviews) {
-      const { error } = await supabase
-        .from("review_vc")
-        .insert(review);
-      if (error) {
-        console.error("Insert error:", error);
-        return res.status(500).json({ error: "Gagal menyimpan ke database.", detail: error.message });
-      }
-    }
+    const { error } = await supabase.from("review_vc").insert(insertData);
+    if (error) throw error;
 
-    res.status(200).json({ message: "Berhasil import review ke database." });
+    res.status(200).json({ message: "Data berhasil diimpor." });
   } catch (err) {
     console.error("Import error:", err);
-    res.status(500).json({ error: "Terjadi kesalahan saat import review." });
+    res.status(500).json({ error: "Gagal impor data dari Excel." });
   }
 };
 
