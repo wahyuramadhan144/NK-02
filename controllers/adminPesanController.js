@@ -6,47 +6,34 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan" });
+    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan." });
 
-    const filePath = path.join(__dirname, "../uploads", file.filename);
-    const workbook = xlsx.readFile(filePath);
+    const workbook = xlsx.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(sheet);
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet);
 
-    const mappedData = data.map(row => ({
+    const reviews = data.map((row) => ({
       nama: row["NAMA"],
-      tanggal: row["TANGGAL VIDEO CALL"] ? new Date(row["TANGGAL VIDEO CALL"]).toISOString() : null,
+      tanggal: row["TANGGAL VIDEO CALL"],
       review: row["FEEDBACK / REVIEW"],
       rating: row["RATING"]
     }));
 
-    const { data: insertedData, error } = await supabase
-      .from("fans_review")
-      .insert(mappedData);
-
-    if (error) {
-      console.error("Supabase error:", error.message);
-      return res.status(500).json({ error: error.message });
+    for (const review of reviews) {
+      const { error } = await supabase
+        .from("review_vc")
+        .insert(review);
+      if (error) {
+        console.error("Insert error:", error);
+        return res.status(500).json({ error: "Gagal menyimpan ke database.", detail: error.message });
+      }
     }
 
-    res.status(200).json({ message: "Data berhasil diimpor", inserted: insertedData });
+    res.status(200).json({ message: "Berhasil import review ke database." });
   } catch (err) {
     console.error("Import error:", err);
-    res.status(500).json({ error: "Gagal memproses file Excel" });
-  }
-};
-
-exports.getReviews = async (req, res) => {
-  try {
-    const query = "SELECT * FROM vc_reviews ORDER BY created_at DESC";
-    const result = await db.query(query);
-    const reviews = result.rows;
-
-    res.status(200).json(reviews);
-  } catch (err) {
-    console.error("Gagal ambil review:", err);
-    res.status(500).json({ error: "Gagal ambil review" });
+    res.status(500).json({ error: "Terjadi kesalahan saat import review." });
   }
 };
 
