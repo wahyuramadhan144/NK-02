@@ -6,37 +6,34 @@ const fs = require("fs");
 exports.importReviewFromExcel = async (req, res) => {
   try {
     const file = req.file;
+    if (!file) return res.status(400).json({ error: "File Excel tidak ditemukan" });
 
-    if (!file) {
-      return res.status(400).json({ error: "File Excel tidak ditemukan." });
-    }
-
-    const workbook = xlsx.read(file.buffer, { type: "buffer" });
+    const filePath = path.join(__dirname, "../uploads", file.filename);
+    const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
 
-    console.log("Parsed data:", data);
+    const mappedData = data.map(row => ({
+      nama: row["NAMA"],
+      tanggal: row["TANGGAL VIDEO CALL"] ? new Date(row["TANGGAL VIDEO CALL"]).toISOString() : null,
+      review: row["FEEDBACK / REVIEW"],
+      rating: row["RATING"]
+    }));
 
-    if (data.length === 0) {
-      return res.status(400).json({ error: "Tidak ada data di file Excel." });
+    const { data: insertedData, error } = await supabase
+      .from("fans_review")
+      .insert(mappedData);
+
+    if (error) {
+      console.error("Supabase error:", error.message);
+      return res.status(500).json({ error: error.message });
     }
 
-    for (const row of data) {
-      const { nama, review, rating } = row;
-
-      if (!nama || !review || !rating) continue;
-
-      await db.query(
-        "INSERT INTO review_vc (nama, review, rating) VALUES (?, ?, ?)",
-        [nama, review, rating]
-      );
-    }
-
-    res.status(200).json({ message: `Import berhasil, total ${data.length} baris dibaca.` });
-  } catch (error) {
-    console.error("Import Excel error:", error);
-    res.status(500).json({ error: "Gagal mengimpor data Excel." });
+    res.status(200).json({ message: "Data berhasil diimpor", inserted: insertedData });
+  } catch (err) {
+    console.error("Import error:", err);
+    res.status(500).json({ error: "Gagal memproses file Excel" });
   }
 };
 
