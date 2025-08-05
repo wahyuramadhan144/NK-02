@@ -25,15 +25,14 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/", async (req, res) => {
   const { content } = req.body;
-  const { id } = req.params;
   if (!content) return res.status(400).json({ error: "Content is required" });
 
   try {
     const result = await db.query(
-      "UPDATE tentang_kami SET content = $1, update_at = CURRENT_TIMESTAMP WHERE id = $2",
-      [content, id]
+      "UPDATE tentang_kami SET content = $1, update_at = CURRENT_TIMESTAMP WHERE id = (SELECT id FROM tentang_kami ORDER BY id DESC LIMIT 1)",
+      [content]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: "Content not found" });
     res.json({ message: "Content updated successfully" });
