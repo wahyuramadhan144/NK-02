@@ -10,14 +10,14 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const [result] = await pool.query(
-      "INSERT INTO mini_profile (content, update_at) VALUES (?, CURRENT_TIMESTAMP)",
+    const result = await pool.query(
+      "INSERT INTO mini_profile (content, update_at) VALUES ($1, CURRENT_TIMESTAMP) RETURNING id",
       [content]
     );
 
     res.status(201).json({
       message: "Mini profile inserted successfully",
-      insertedId: result.insertId
+      insertedId: result.rows[0].id
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
