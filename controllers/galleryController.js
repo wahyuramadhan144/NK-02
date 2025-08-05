@@ -19,13 +19,18 @@ exports.createGallery = async (req, res) => {
   }
 
   try {
-    await db.query(
+    console.log("Data yang akan dimasukkan:", { folder, imageUrl, publicId });
+
+    const result = await db.query(
       "INSERT INTO gallery (folder, image_url, public_id) VALUES ($1, $2, $3)",
       [folder, imageUrl, publicId]
     );
+
+    console.log("Hasil query:", result);
     res.status(201).json({ message: "Gambar disimpan" });
+
   } catch (err) {
-    console.error(err);
+    console.error("Terjadi error saat INSERT:", err);
     res.status(500).json({ error: "Gagal simpan galeri" });
   }
 };
