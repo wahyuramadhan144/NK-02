@@ -35,6 +35,15 @@ exports.createGallery = async (req, res) => {
   }
 };
 
+exports.createGalleryManual = async ({ imageUrl, publicId, folder }) => {
+  if (!imageUrl || !publicId) throw new Error("Data tidak lengkap");
+
+  await db.query(
+    "INSERT INTO gallery (folder, image_url, public_id) VALUES ($1, $2, $3)",
+    [folder, imageUrl, publicId]
+  );
+};
+
 exports.deleteGallery = async (req, res) => {
   const { id } = req.params;
 
