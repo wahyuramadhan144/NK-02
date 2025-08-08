@@ -34,7 +34,7 @@ const teaterRoutes = require('./routes/teater');
 const exportRoute = require('./routes/export');
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
-app.use('/api/review-vc', reviewRoutes);
+app.use('/api/admin-pesan/review-vc', reviewRoutes);
 app.use("/api/auth", authRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/news', newsRoutes);
