@@ -3,8 +3,8 @@ const xlsx = require("xlsx");
 
 exports.getMessages = async (req, res) => {
   try {
-    const [messages] = await db.query("SELECT * FROM fans_messages ORDER BY id DESC");
-    res.status(200).json(messages);
+    const { rows } = await db.query("SELECT * FROM fans_messages ORDER BY id DESC");
+    res.status(200).json(rows);
   } catch (err) {
     console.error("Gagal ambil pesan:", err);
     res.status(500).json({ error: "Gagal ambil pesan" });
@@ -13,10 +13,15 @@ exports.getMessages = async (req, res) => {
 
 exports.createMessage = async (req, res) => {
   try {
-    const { nama, pesan } = req.body;
-    if (!nama || !pesan) return res.status(400).json({ error: "Nama dan pesan wajib diisi" });
+    const { sender, message } = req.body;
+    if (!sender || !message) {
+      return res.status(400).json({ error: "Sender dan message wajib diisi" });
+    }
 
-    await db.query("INSERT INTO fans_messages (nama, pesan) VALUES (?, ?)", [nama, pesan]);
+    await db.query(
+      "INSERT INTO fans_messages (message, sender, created_at, is_approve) VALUES ($1, $2, NOW(), false)",
+      [message, sender]
+    );
     res.status(201).json({ message: "Pesan berhasil ditambahkan" });
   } catch (err) {
     console.error("Gagal tambah pesan:", err);
@@ -27,7 +32,7 @@ exports.createMessage = async (req, res) => {
 exports.approveMessage = async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("UPDATE fans_messages SET approved = true WHERE id = ?", [id]);
+    await db.query("UPDATE fans_messages SET is_approve = true WHERE id = $1", [id]);
     res.status(200).json({ message: "Pesan disetujui" });
   } catch (err) {
     console.error("Gagal approve pesan:", err);
@@ -38,7 +43,7 @@ exports.approveMessage = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM fans_messages WHERE id = ?", [id]);
+    await db.query("DELETE FROM fans_messages WHERE id = $1", [id]);
     res.status(200).json({ message: "Pesan berhasil dihapus" });
   } catch (err) {
     console.error("Gagal hapus pesan:", err);
@@ -48,8 +53,8 @@ exports.deleteMessage = async (req, res) => {
 
 exports.getReviews = async (req, res) => {
   try {
-    const [reviews] = await db.query("SELECT * FROM review_vc ORDER BY id DESC");
-    res.status(200).json(reviews);
+    const { rows } = await db.query("SELECT * FROM review_vc ORDER BY id DESC");
+    res.status(200).json(rows);
   } catch (err) {
     console.error("Gagal ambil review:", err);
     res.status(500).json({ error: "Gagal ambil review" });
@@ -58,13 +63,14 @@ exports.getReviews = async (req, res) => {
 
 exports.createReview = async (req, res) => {
   try {
-    const { nama, tanggal, review, rating } = req.body;
-    if (!nama || !tanggal || !review)
-      return res.status(400).json({ error: "Field nama, tanggal, dan review wajib diisi" });
+    const { bulan, nama, review, rating } = req.body;
+    if (!bulan || !nama || !review) {
+      return res.status(400).json({ error: "Field bulan, nama, dan review wajib diisi" });
+    }
 
     await db.query(
-      "INSERT INTO review_vc (nama, tanggal, review, rating) VALUES (?, ?, ?, ?)",
-      [nama, tanggal, review, rating || null]
+      "INSERT INTO review_vc (bulan, nama, review, rating) VALUES ($1, $2, $3, $4)",
+      [bulan, nama, review, rating || null]
     );
     res.status(201).json({ message: "Review berhasil ditambahkan" });
   } catch (err) {
@@ -76,7 +82,7 @@ exports.createReview = async (req, res) => {
 exports.deleteReview = async (req, res) => {
   try {
     const { id } = req.params;
-    await db.query("DELETE FROM review_vc WHERE id = ?", [id]);
+    await db.query("DELETE FROM review_vc WHERE id = $1", [id]);
     res.status(200).json({ message: "Review berhasil dihapus" });
   } catch (err) {
     console.error("Gagal hapus review:", err);
@@ -94,11 +100,11 @@ exports.importReviewFromExcel = async (req, res) => {
     const data = xlsx.utils.sheet_to_json(sheet);
 
     for (const row of data) {
-      const { nama, tanggal, review, rating } = row;
-      if (nama && tanggal && review) {
+      const { bulan, nama, review, rating } = row;
+      if (bulan && nama && review) {
         await db.query(
-          "INSERT INTO review_vc (nama, tanggal, review, rating) VALUES (?, ?, ?, ?)",
-          [nama, tanggal, review, rating || null]
+          "INSERT INTO review_vc (bulan, nama, review, rating) VALUES ($1, $2, $3, $4)",
+          [bulan, nama, review, rating || null]
         );
       }
     }
