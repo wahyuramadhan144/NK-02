@@ -22,7 +22,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const reviewRoutes = require('./routes/reviews');
+const contentRoutes = require("./routes/contentRoutes");
 const vcScheduleRoutes = require("./routes/vcScheduleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const galleryRoutes = require('./routes/gallery');
@@ -34,7 +34,7 @@ const teaterRoutes = require('./routes/teater');
 const exportRoute = require('./routes/export');
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
-app.use('/api/admin-pesan/review-vc', reviewRoutes);
+app.use("/api/content", contentRoutes);
 app.use("/api/auth", authRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/news', newsRoutes);
