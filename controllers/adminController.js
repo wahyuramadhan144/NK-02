@@ -1,6 +1,18 @@
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 
+exports.getAllAdmins = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id, username, email, created_at FROM admin ORDER BY id ASC`
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal mengambil data admin' });
+    }
+};
+
 exports.addAdmin = async (req, res) => {
     try {
         const { username, email, password } = req.body;

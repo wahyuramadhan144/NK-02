@@ -44,7 +44,7 @@ app.use("/api/mini-profile", miniProfileRoutes);
 app.use("/api/tentang-kami", tentangKamiRoute);
 app.use('/api/teater', teaterRoutes);
 app.use('/api', exportRoute);
-app.use('/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
