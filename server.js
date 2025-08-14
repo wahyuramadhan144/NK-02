@@ -32,6 +32,7 @@ const miniProfileRoutes = require("./routes/miniProfile");
 const tentangKamiRoute = require('./routes/tentangKami');
 const teaterRoutes = require('./routes/teater');
 const exportRoute = require('./routes/export');
+const adminRoutes = require('./routes/adminRoutes');
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
 app.use("/api/content", contentRoutes);
@@ -43,6 +44,7 @@ app.use("/api/mini-profile", miniProfileRoutes);
 app.use("/api/tentang-kami", tentangKamiRoute);
 app.use('/api/teater', teaterRoutes);
 app.use('/api', exportRoute);
+app.use('/admin', adminRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
