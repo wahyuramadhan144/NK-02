@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
+const auditLog = require('../utils/auditLogger');
 
 exports.getAllAdmins = async (req, res) => {
     try {
@@ -24,6 +25,9 @@ exports.addAdmin = async (req, res) => {
             `INSERT INTO admin (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email, created_at`,
             [username, email, hashedPassword]
         );
+
+        await auditLog(req.admin.id, 'INSERT', 'Manage Admin');
+
         res.status(201).json({ message: 'Admin berhasil ditambahkan', data: result.rows[0] });
     } catch (error) {
         console.error(error);
@@ -61,6 +65,8 @@ exports.updateAdmin = async (req, res) => {
         const result = await pool.query(updateQuery, values);
         if (result.rowCount === 0) return res.status(404).json({ message: 'Admin tidak ditemukan' });
 
+        await auditLog(req.admin.id, 'UPDATE', 'Manage Admin');
+
         res.json({ message: 'Admin berhasil diperbarui', data: result.rows[0] });
     } catch (error) {
         console.error(error);
@@ -73,6 +79,8 @@ exports.deleteAdmin = async (req, res) => {
         const { id } = req.params;
         const result = await pool.query(`DELETE FROM admin WHERE id = $1 RETURNING id`, [id]);
         if (result.rowCount === 0) return res.status(404).json({ message: 'Admin tidak ditemukan' });
+
+        await auditLog(req.admin.id, 'DELETE', 'Manage Admin');
 
         res.json({ message: 'Admin berhasil dihapus' });
     } catch (error) {
