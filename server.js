@@ -16,10 +16,29 @@ const PORT = process.env.PORT || 3306;
 const apiKey = process.env.JKT48_API_KEY || "NK-SUJ1";
 const NAYLA_ID = "65ce68ed1dd7aa2c8c0ca780";
 
+const allowedOrigins = [
+  "https://backend-seven-nu-19.vercel.app",
+  "https://www.nayrakuen.com",
+  "https://nayrakuen.com",
+  "https://www.admiral.nayrakuen.com",
+  "https://admiral.nayrakuen.com",
+  "http://localhost:3000",
+  "http://localhost:3001"
+];
+
 app.use(cors({
-  origin: ["https://backend-seven-nu-19.vercel.app", "https://www.nayrakuen.com", "https://nayrakuen.com","https://www.admiral.nayrakuen.com", "https://admiral.nayrakuen.com", "http://localhost:3000", "http://localhost:3001"],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
   credentials: true
 }));
+
 app.use(express.json());
 
 const contentRoutes = require("./routes/contentRoutes");
