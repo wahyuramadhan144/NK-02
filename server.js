@@ -12,16 +12,15 @@ const {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3306;
 const apiKey = process.env.JKT48_API_KEY || "NK-SUJ1";
 const NAYLA_ID = "65ce68ed1dd7aa2c8c0ca780";
 
 const allowedOrigins = [
   "https://backend-seven-nu-19.vercel.app",
-  "https://www.nayrakuen.com",
   "https://nayrakuen.com",
-  "https://www.admiral.nayrakuen.com",
+  "https://www.nayrakuen.com",
   "https://admiral.nayrakuen.com",
+  "https://www.admiral.nayrakuen.com",
   "http://localhost:3000",
   "http://localhost:3001"
 ];
@@ -29,53 +28,42 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     console.log("CORS request from:", origin);
-
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS: " + origin));
+      return callback(null, true);
     }
+    return callback(new Error("Not allowed by CORS: " + origin));
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Vary", "Origin");
-  next();
-});
 
 app.use(express.json());
 
 const contentRoutes = require("./routes/contentRoutes");
 const vcScheduleRoutes = require("./routes/vcScheduleRoutes");
 const authRoutes = require("./routes/authRoutes");
-const galleryRoutes = require('./routes/gallery');
-const newsRoutes = require('./routes/news');
-const aboutNaylaRoute = require('./routes/aboutNayla');
+const galleryRoutes = require("./routes/gallery");
+const newsRoutes = require("./routes/news");
+const aboutNaylaRoute = require("./routes/aboutNayla");
 const miniProfileRoutes = require("./routes/miniProfile");
-const tentangKamiRoute = require('./routes/tentangKami');
-const teaterRoutes = require('./routes/teater');
-const exportRoute = require('./routes/export');
-const adminRoutes = require('./routes/adminRoutes');
+const tentangKamiRoute = require("./routes/tentangKami");
+const teaterRoutes = require("./routes/teater");
+const exportRoute = require("./routes/export");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/auth", authRoutes);
-app.use('/api/gallery', galleryRoutes);
-app.use('/api/news', newsRoutes);
-app.use('/api/about-nayla', aboutNaylaRoute);
+app.use("/api/gallery", galleryRoutes);
+app.use("/api/news", newsRoutes);
+app.use("/api/about-nayla", aboutNaylaRoute);
 app.use("/api/mini-profile", miniProfileRoutes);
 app.use("/api/tentang-kami", tentangKamiRoute);
-app.use('/api/teater', teaterRoutes);
-app.use('/api', exportRoute);
-app.use('/api/admin', adminRoutes);
+app.use("/api/teater", teaterRoutes);
+app.use("/api", exportRoute);
+app.use("/api/admin", adminRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
@@ -183,7 +171,7 @@ app.get("/api/nayla/idnlive", async (req, res) => {
     const latestLive = sorted[0];
     res.json(latestLive);
   } catch (error) {
-    console.error("❌ Gagal ambil data IDN Live Nayla:", error.message);
+    console.error("Gagal ambil data IDN Live Nayla:", error.message);
     res.status(500).json({ error: "Gagal ambil data IDN Live Nayla" });
   }
 });
