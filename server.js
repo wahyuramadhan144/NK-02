@@ -11,7 +11,7 @@ const jkt48API = axios.create({
   baseURL: "https://v2.jkt48connect.com/api",
   headers: {
     "Content-Type": "application/json",
-    "X-priority-token": process.env.JKT48_PRIORITY_TOKEN,
+    "X-Priority-Token": process.env.JKT48_PRIORITY_TOKEN,
   },
 });
 
