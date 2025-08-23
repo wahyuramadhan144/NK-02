@@ -1,18 +1,19 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const {
-  theater,
-  theaterDetail,
-  liveShowroom,
-  liveIdn,
-  members: getAllMembers,
-} = require("@jkt48/core");
+const axios = require("axios");
 
 dotenv.config();
 
 const app = express();
-const apiKey = process.env.JKT48_API_KEY || "NK-SUJ1";
 const NAYLA_ID = "65ce68ed1dd7aa2c8c0ca780";
+
+const jkt48API = axios.create({
+  baseURL: "https://v2.jkt48connect.com/api",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Web-Secret": process.env.JKT48_WEB_SECRET,
+  },
+});
 
 const allowedOrigins = [
   "https://backend-seven-nu-19.vercel.app",
@@ -79,7 +80,7 @@ function timeoutPromise(promise, ms) {
     promise,
     new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Timeout")), ms)
-    )
+    ),
   ]);
 }
 
@@ -94,15 +95,15 @@ app.get("/api/nayla/schedule", async (req, res) => {
 
   try {
     console.log("Memuat jadwal Nayla...");
-    const result = await theater(apiKey);
-    const shows = result.theater.slice(0, 10);
+    const result = await jkt48API.get("/jkt48/theater");
+    const shows = result.data?.theater?.slice(0, 10) || [];
 
     const details = await Promise.all(
-      shows.map(show =>
-        timeoutPromise(theaterDetail(show.id, apiKey), 5000).catch((err) => {
-          console.warn(`Gagal fetch detail show ID ${show.id}`);
-          return null;
-        })
+      shows.map((show) =>
+        timeoutPromise(
+          jkt48API.get(`/jkt48/theater/${show.id}`).then((r) => r.data),
+          5000
+        ).catch(() => null)
       )
     );
 
@@ -119,7 +120,7 @@ app.get("/api/nayla/schedule", async (req, res) => {
       const isUpcoming = showDate >= today && showDate <= twoWeeksAhead;
 
       const adaNayla = showDetail.members?.some(
-        m => m.url_key?.toLowerCase() === "nayla"
+        (m) => m.url_key?.toLowerCase() === "nayla"
       );
 
       if (isUpcoming && adaNayla) {
@@ -146,11 +147,13 @@ app.get("/api/nayla/schedule", async (req, res) => {
 
 app.get("/api/nayla/showroom", async (req, res) => {
   try {
-    const liveSR = await liveShowroom(apiKey);
-    const naylaSR = liveSR.find(live => live.member_id === NAYLA_ID);
+    const { data } = await jkt48API.get("/jkt48/showroom");
+    const naylaSR = data.find((live) => live.member_id === NAYLA_ID);
 
     if (!naylaSR) {
-      return res.status(404).json({ error: "Showroom Nayla tidak ditemukan atau tidak sedang live" });
+      return res.status(404).json({
+        error: "Showroom Nayla tidak ditemukan atau tidak sedang live",
+      });
     }
 
     res.json(naylaSR);
@@ -162,21 +165,21 @@ app.get("/api/nayla/showroom", async (req, res) => {
 
 app.get("/api/nayla/idnlive", async (req, res) => {
   try {
-    const idnLive = await liveIdn(apiKey);
-    const naylaLives = idnLive.filter(item =>
-      item?.creator?.username === "jkt48_nayla"
+    const { data } = await jkt48API.get("/jkt48/idn");
+    const naylaLives = data.filter(
+      (item) => item?.creator?.username === "jkt48_nayla"
     );
 
     if (!naylaLives.length) {
-      return res.status(404).json({ error: "IDN Live Nayla tidak ditemukan atau tidak sedang live" });
+      return res.status(404).json({
+        error: "IDN Live Nayla tidak ditemukan atau tidak sedang live",
+      });
     }
 
-    const sorted = naylaLives.sort((a, b) =>
-      new Date(b.live_at) - new Date(a.live_at)
+    const sorted = naylaLives.sort(
+      (a, b) => new Date(b.live_at) - new Date(a.live_at)
     );
-
-    const latestLive = sorted[0];
-    res.json(latestLive);
+    res.json(sorted[0]);
   } catch (error) {
     console.error("Gagal ambil data IDN Live Nayla:", error.message);
     res.status(500).json({ error: "Gagal ambil data IDN Live Nayla" });
