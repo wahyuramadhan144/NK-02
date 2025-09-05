@@ -3,7 +3,7 @@ const router = express.Router();
 const merchantController = require("../controllers/merchantController");
 const multer = require("multer");
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/products", merchantController.getProducts);
 router.post("/products", upload.single("image"), merchantController.addProduct);
