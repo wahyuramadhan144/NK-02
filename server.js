@@ -52,6 +52,7 @@ const teaterRoutes = require("./routes/teater");
 const exportRoute = require("./routes/export");
 const adminRoutes = require("./routes/adminRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
+const purchaseRoutes = require("./routes/purchaseRoutes");
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
 app.use("/api/content", contentRoutes);
@@ -65,6 +66,7 @@ app.use("/api/teater", teaterRoutes);
 app.use("/api", exportRoute);
 app.use("/api/admin", adminRoutes);
 app.use("/api/merchant", merchantRoutes);
+app.use("/api/purchase", purchaseRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
