@@ -7,21 +7,36 @@ exports.getProducts = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("Error getProducts:", err.message);
+    console.error("Error getProducts:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
 exports.addProduct = async (req, res) => {
-  const { name, price, description, image } = req.body;
   try {
+    const { name, price, description } = req.body;
+
+    if (!name || !price) {
+      return res.status(400).json({ error: "Name and price are required" });
+    }
+
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+
     const result = await pool.query(
-      "INSERT INTO merchant_products (name, price, description, image) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, price, description, image]
+      `INSERT INTO merchant_products (name, price, description, image_url)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name, price, description || null, imageUrl]
     );
-    res.json({ message: "Product added", product: result.rows[0] });
+
+    res.status(201).json({
+      message: "Product added",
+      product: result.rows[0],
+    });
   } catch (err) {
-    console.error("Error addProduct:", err.message);
+    console.error("Error addProduct:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -40,7 +55,7 @@ exports.getProductById = async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error getProductById:", err.message);
+    console.error("Error getProductById:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -49,14 +64,14 @@ exports.getOrders = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT o.id, o.customer_name, o.quantity, o.created_at,
-              p.name AS product_name, p.price, p.description, p.image
+              p.name AS product_name, p.price, p.description, p.image_url
        FROM merchant_orders o
        JOIN merchant_products p ON o.product_id = p.id
        ORDER BY o.id ASC`
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("Error getOrders:", err.message);
+    console.error("Error getOrders:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -64,13 +79,24 @@ exports.getOrders = async (req, res) => {
 exports.addOrder = async (req, res) => {
   const { product_id, customer_name, quantity } = req.body;
   try {
+    if (!product_id || !customer_name || !quantity) {
+      return res.status(400).json({
+        error: "product_id, customer_name, and quantity are required",
+      });
+    }
+
     const result = await pool.query(
-      "INSERT INTO merchant_orders (product_id, customer_name, quantity) VALUES ($1, $2, $3) RETURNING *",
+      `INSERT INTO merchant_orders (product_id, customer_name, quantity)
+       VALUES ($1, $2, $3) RETURNING *`,
       [product_id, customer_name, quantity]
     );
-    res.json({ message: "Order placed", order: result.rows[0] });
+
+    res.status(201).json({
+      message: "Order placed",
+      order: result.rows[0],
+    });
   } catch (err) {
-    console.error("Error addOrder:", err.message);
+    console.error("Error addOrder:", err);
     res.status(500).json({ error: err.message });
   }
 };
