@@ -12,6 +12,7 @@
   "dependencies": {
     "@jkt48/core": "^1.0.9",
     "bcrypt": "^6.0.0",
+    "body-parser": "^2.2.0",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",

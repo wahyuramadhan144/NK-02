@@ -5,6 +5,7 @@ const axios = require("axios");
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 const NAYLA_ID = "65ce68ed1dd7aa2c8c0ca780";
 
 const jkt48API = axios.create({
@@ -15,32 +16,20 @@ const jkt48API = axios.create({
   },
 });
 
-const allowedOrigins = [
-  "https://backend-seven-nu-19.vercel.app",
-  "https://nayrakuen.com",
-  "https://www.nayrakuen.com",
-  "https://admiral.nayrakuen.com",
-  "https://www.admiral.nayrakuen.com",
-  "http://localhost:3000",
-  "http://localhost:3001",
-];
-
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   console.log("CORS request from:", origin);
 
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    );
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-  }
+  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
@@ -62,6 +51,7 @@ const tentangKamiRoute = require("./routes/tentangKami");
 const teaterRoutes = require("./routes/teater");
 const exportRoute = require("./routes/export");
 const adminRoutes = require("./routes/adminRoutes");
+const merchantRoutes = require("./routes/merchantRoutes");
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
 app.use("/api/content", contentRoutes);
@@ -74,6 +64,7 @@ app.use("/api/tentang-kami", tentangKamiRoute);
 app.use("/api/teater", teaterRoutes);
 app.use("/api", exportRoute);
 app.use("/api/admin", adminRoutes);
+app.use("/api/merchant", merchantRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
@@ -186,4 +177,10 @@ app.get("/api/nayla/idnlive", async (req, res) => {
   }
 });
 
-module.exports = app;
+app.get("/", (req, res) => {
+  res.send("Backend Nayrakuen is running...");
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
