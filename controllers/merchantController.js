@@ -1,4 +1,6 @@
 const pool = require("../config/db");
+const cloudinary = require("../config/cloudinary");
+const fs = require("fs");
 
 exports.getProducts = async (req, res) => {
   try {
@@ -22,7 +24,16 @@ exports.addProduct = async (req, res) => {
 
     let imageUrl = null;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "merchant_products",
+        use_filename: true,
+        unique_filename: false,
+        resource_type: "image",
+      });
+
+      imageUrl = uploadResult.secure_url;
+
+      fs.unlinkSync(req.file.path);
     }
 
     const result = await pool.query(
