@@ -1,6 +1,32 @@
 const pool = require("../config/db");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
+const axios = require("axios");
+
+const addCustomerToVendor = async (customerData) => {
+  try {
+    const response = await axios.post(
+      "https://v2.jkt48connect.com/api/nayrakuen/customer-input",
+      {
+        username: "vzy",
+        password: "vzy",
+        nama: customerData.name,
+        alamat: customerData.address,
+        nomor_hp: customerData.phone,
+        email: customerData.email,
+        harga: customerData.price,
+        product: customerData.product || "Produk Default",
+        member: customerData.member || "no",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error adding customer to vendor:", error.message);
+    throw error;
+  }
+};
 
 exports.getProducts = async (req, res) => {
   try {
@@ -88,7 +114,7 @@ exports.getOrders = async (req, res) => {
 };
 
 exports.addOrder = async (req, res) => {
-  const { product_id, customer_name, quantity } = req.body;
+  const { product_id, customer_name, quantity, address, phone, email } = req.body;
   try {
     if (!product_id || !customer_name || !quantity) {
       return res.status(400).json({
@@ -96,15 +122,39 @@ exports.addOrder = async (req, res) => {
       });
     }
 
+    const productResult = await pool.query(
+      "SELECT * FROM merchant_products WHERE id = $1",
+      [product_id]
+    );
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const product = productResult.rows[0];
+
     const result = await pool.query(
       `INSERT INTO merchant_orders (product_id, customer_name, quantity)
        VALUES ($1, $2, $3) RETURNING *`,
       [product_id, customer_name, quantity]
     );
 
+    const order = result.rows[0];
+
+    const totalPrice = product.price * quantity;
+
+    const vendorResponse = await addCustomerToVendor({
+      name: customer_name,
+      address: address || "Alamat belum diisi",
+      phone: phone || "-",
+      email: email || "-",
+      price: totalPrice,
+      product: product.name,
+      member: "no",
+    });
+
     res.status(201).json({
-      message: "Order placed",
-      order: result.rows[0],
+      message: "Order placed & synced with vendor",
+      order,
+      vendorResponse,
     });
   } catch (err) {
     console.error("Error addOrder:", err);
