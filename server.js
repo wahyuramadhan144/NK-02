@@ -53,6 +53,7 @@ const exportRoute = require("./routes/export");
 const adminRoutes = require("./routes/adminRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
+const customerRoutes = require("./routes/customer");
 
 app.use("/api/vc-schedule", vcScheduleRoutes);
 app.use("/api/content", contentRoutes);
@@ -67,6 +68,7 @@ app.use("/api", exportRoute);
 app.use("/api/admin", adminRoutes);
 app.use("/api/merchant", merchantRoutes);
 app.use("/api/purchase", purchaseRoutes);
+app.use("/api", customerRoutes);
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
