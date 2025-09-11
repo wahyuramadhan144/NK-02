@@ -1,8 +1,8 @@
 const pool = require("../config/db");
 const cloudinary = require("../config/cloudinary");
-const fs = require("fs");
 const axios = require("axios");
 
+// ============== Helper Vendor Sync ==============
 const addCustomerToVendor = async (customerData) => {
   try {
     const response = await axios.post(
@@ -28,6 +28,7 @@ const addCustomerToVendor = async (customerData) => {
   }
 };
 
+// ============== Products ==============
 exports.getProducts = async (req, res) => {
   try {
     const result = await pool.query(
@@ -48,24 +49,35 @@ exports.addProduct = async (req, res) => {
       return res.status(400).json({ error: "Name and price are required" });
     }
 
-    let imageUrl = null;
-    if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "merchant_products",
-        use_filename: true,
-        unique_filename: false,
-        resource_type: "image",
-      });
+    let imageUrls = [];
 
-      imageUrl = uploadResult.secure_url;
-
-      fs.unlinkSync(req.file.path);
+    if (req.files && req.files.length > 0) {
+      // Upload semua file ke Cloudinary (pakai buffer memoryStorage)
+      imageUrls = await Promise.all(
+        req.files.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                {
+                  folder: "merchant_products",
+                  resource_type: "image",
+                },
+                (error, result) => {
+                  if (error) reject(error);
+                  else resolve(result.secure_url);
+                }
+              );
+              stream.end(file.buffer);
+            })
+        )
+      );
     }
 
+    // simpan ke PostgreSQL (kolom text[])
     const result = await pool.query(
       `INSERT INTO merchant_products (name, price, description, image_url)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name, price, description || null, imageUrl]
+      [name, price, description || null, imageUrls]
     );
 
     res.status(201).json({
@@ -97,6 +109,7 @@ exports.getProductById = async (req, res) => {
   }
 };
 
+// ============== Orders ==============
 exports.getOrders = async (req, res) => {
   try {
     const result = await pool.query(
@@ -138,7 +151,6 @@ exports.addOrder = async (req, res) => {
     );
 
     const order = result.rows[0];
-
     const totalPrice = product.price * quantity;
 
     const vendorResponse = await addCustomerToVendor({
